@@ -54,16 +54,19 @@ public class PlayerInputController : MonoBehaviour, IPlayerActions
 
     public void OnInteract(InputAction.CallbackContext context)
     {
+        Debug.Log("Interact input received");
         if (context.performed) OnInteractEvent.Invoke();
     }
 
     public void OnPauseGame(InputAction.CallbackContext context)
     {
+        Debug.Log("Pause input received");
         if (context.performed) OnPauseEvent?.Invoke();
     }
 
     public void OnPickUp(InputAction.CallbackContext context)
     {
+        Debug.Log("PickUp input received");
         throw new System.NotImplementedException();
     }
 }

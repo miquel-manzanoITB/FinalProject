@@ -22,6 +22,14 @@ public class PlayerInteraction : MonoBehaviour
         HandleHover();
         HandleDragInput();
         HandleScroll();
+        HandleInteract();
+    }
+
+    void HandleInteract()
+    {
+        // Al pulsar E cerca de un objeto → Interact()
+        if (Keyboard.current.eKey.wasPressedThisFrame && _hovered != null)
+            _hovered.Interact();
     }
 
     // Detecta qué objeto está mirando el jugador

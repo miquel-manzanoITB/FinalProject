@@ -104,6 +104,12 @@ public class PlayerMovement : MonoBehaviour
         _rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
     }
 
+    public void SuperJump()
+    {
+        _rb.linearVelocity = new Vector3(_rb.linearVelocity.x, 0f, _rb.linearVelocity.z);
+        _rb.AddForce(Vector3.up * 100, ForceMode.Impulse);
+    }
+
     void CheckGround()
     {
         Ray ray = new Ray(transform.position, Vector3.down);
