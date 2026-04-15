@@ -54,8 +54,24 @@ public class PlayerInputController : MonoBehaviour, IPlayerActions
 
     public void OnInteract(InputAction.CallbackContext context)
     {
-        Debug.Log("Interact input received");
-        if (context.performed) OnInteractEvent.Invoke();
+        OnInteractEvent.Invoke();
+        Debug.Log("Interact input received fuera context");
+        if (context.performed)
+        {
+            Debug.Log("performed");
+            OnInteractEvent.Invoke();
+        }
+        // No va el context.performed
+        if (context.started)
+        {
+            Debug.Log("started");
+            OnInteractEvent.Invoke();
+        }
+        if (context.canceled)
+        {
+            Debug.Log("canceled");
+            OnInteractEvent.Invoke();
+        }
     }
 
     public void OnPauseGame(InputAction.CallbackContext context)

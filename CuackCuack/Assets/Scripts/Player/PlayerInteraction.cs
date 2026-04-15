@@ -1,5 +1,7 @@
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Windows;
 
 public class PlayerInteraction : MonoBehaviour
 {
@@ -17,18 +19,33 @@ public class PlayerInteraction : MonoBehaviour
     private Interactable _dragging;
     private float _dragDistance;
 
+    private PlayerInputController _input;
+
+    void Awake()
+    {
+        _input = GetComponent<PlayerInputController>();
+    }
+
+    void OnEnable()
+    {
+        _input.OnInteractEvent += OnInteract;
+    }
+
+    void OnDisable()
+    {
+        _input.OnInteractEvent -= OnInteract;
+    }
+
     void Update()
     {
         HandleHover();
         HandleDragInput();
         HandleScroll();
-        HandleInteract();
     }
 
-    void HandleInteract()
+    void OnInteract()
     {
-        // Al pulsar E cerca de un objeto → Interact()
-        if (Keyboard.current.eKey.wasPressedThisFrame && _hovered != null)
+        if (_hovered != null)
             _hovered.Interact();
     }
 
