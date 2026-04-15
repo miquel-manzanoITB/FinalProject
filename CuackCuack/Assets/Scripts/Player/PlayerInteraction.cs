@@ -18,6 +18,7 @@ public class PlayerInteraction : MonoBehaviour
     private Interactable _hovered;
     private Interactable _dragging;
     private float _dragDistance;
+    private bool _isDragging;
 
     private PlayerInputController _input;
 
@@ -29,11 +30,15 @@ public class PlayerInteraction : MonoBehaviour
     void OnEnable()
     {
         _input.OnInteractEvent += OnInteract;
+        _input.OnPickUpEvent += OnPickUp;
+        _input.OnDropEvent += OnDrop;
     }
 
     void OnDisable()
     {
         _input.OnInteractEvent -= OnInteract;
+        _input.OnPickUpEvent -= OnPickUp;
+        _input.OnDropEvent -= OnDrop;
     }
 
     void Update()
@@ -47,6 +52,15 @@ public class PlayerInteraction : MonoBehaviour
     {
         if (_hovered != null)
             _hovered.Interact();
+    }
+
+    void OnPickUp()
+    {
+        _isDragging = true;
+    }
+    void OnDrop()
+    {
+        _isDragging = false;
     }
 
     // Detecta qué objeto está mirando el jugador
@@ -72,7 +86,7 @@ public class PlayerInteraction : MonoBehaviour
     void HandleDragInput()
     {
         // Empezar arrastre
-        if (Mouse.current.leftButton.wasPressedThisFrame && _hovered != null && _dragging == null)
+        if (_isDragging && _hovered != null && _dragging == null)
         {
             Ray ray = playerCamera.ScreenPointToRay(new Vector2(Screen.width / 2, Screen.height / 2));
             if (Physics.Raycast(ray, out RaycastHit hit, interactRange, interactableLayer))
@@ -84,7 +98,7 @@ public class PlayerInteraction : MonoBehaviour
         }
 
         // Arrastrar cada frame
-        if (_dragging != null && Mouse.current.leftButton.isPressed)
+        if (_dragging != null && _isDragging)
         {
             Ray ray = playerCamera.ScreenPointToRay(new Vector2(Screen.width / 2, Screen.height / 2));
             Vector3 targetPos = ray.GetPoint(_dragDistance);
@@ -92,7 +106,7 @@ public class PlayerInteraction : MonoBehaviour
         }
 
         // Soltar
-        if (Mouse.current.leftButton.wasReleasedThisFrame && _dragging != null)
+        if (!_isDragging && _dragging != null)
         {
             _dragging.StopDrag();
             _dragging = null;

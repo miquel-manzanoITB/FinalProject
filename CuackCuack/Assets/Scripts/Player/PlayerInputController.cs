@@ -16,6 +16,8 @@ public class PlayerInputController : MonoBehaviour, IPlayerActions
     public event UnityAction<Vector2> OnLookEvent = delegate { };
     public event UnityAction OnJumpEvent = delegate { };
     public event UnityAction OnInteractEvent = delegate { };
+    public event UnityAction OnPickUpEvent = delegate { };
+    public event UnityAction OnDropEvent = delegate { };
 
     public static event UnityAction OnPauseEvent;   // static so the UI can listen without a reference
 
@@ -82,7 +84,15 @@ public class PlayerInputController : MonoBehaviour, IPlayerActions
 
     public void OnPickUp(InputAction.CallbackContext context)
     {
-        Debug.Log("PickUp input received");
-        throw new System.NotImplementedException();
+        if (context.started)
+        {
+            Debug.Log("PickUp input received");
+            OnPickUpEvent.Invoke();
+        }
+        if (context.canceled)
+        {
+            Debug.Log("Drop input received");
+            OnDropEvent.Invoke();
+        }
     }
 }
