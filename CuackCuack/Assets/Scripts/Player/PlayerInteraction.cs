@@ -1,7 +1,4 @@
-using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.InputSystem;
-using UnityEngine.Windows;
 
 public class PlayerInteraction : MonoBehaviour
 {
@@ -19,6 +16,7 @@ public class PlayerInteraction : MonoBehaviour
     private Interactable _dragging;
     private float _dragDistance;
     private bool _isDragging;
+    private float _scrollDirection;
 
     private PlayerInputController _input;
 
@@ -32,6 +30,7 @@ public class PlayerInteraction : MonoBehaviour
         _input.OnInteractEvent += OnInteract;
         _input.OnPickUpEvent += OnPickUp;
         _input.OnDropEvent += OnDrop;
+        _input.OnScrollEvent += OnScroll;
     }
 
     void OnDisable()
@@ -39,6 +38,7 @@ public class PlayerInteraction : MonoBehaviour
         _input.OnInteractEvent -= OnInteract;
         _input.OnPickUpEvent -= OnPickUp;
         _input.OnDropEvent -= OnDrop;
+        _input.OnScrollEvent -= OnScroll;
     }
 
     void Update()
@@ -61,6 +61,11 @@ public class PlayerInteraction : MonoBehaviour
     void OnDrop()
     {
         _isDragging = false;
+    }
+
+    void OnScroll(Vector2 dir)
+    {
+        _scrollDirection = dir.y;
     }
 
     // Detecta qué objeto está mirando el jugador
@@ -117,8 +122,7 @@ public class PlayerInteraction : MonoBehaviour
     void HandleScroll()
     {
         if (_dragging == null) return;
-        float scroll = Mouse.current.scroll.ReadValue().y;
-        _dragDistance += scroll * scrollSpeed * Time.deltaTime;
+        _dragDistance += _scrollDirection * scrollSpeed * Time.deltaTime;
         _dragDistance = Mathf.Clamp(_dragDistance, minDragDistance, maxDragDistance);
     }
 }
