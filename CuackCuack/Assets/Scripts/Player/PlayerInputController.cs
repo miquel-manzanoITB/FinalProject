@@ -14,8 +14,11 @@ public class PlayerInputController : MonoBehaviour, IPlayerActions
 
     public event UnityAction<Vector2> OnMoveEvent = delegate { };
     public event UnityAction<Vector2> OnLookEvent = delegate { };
+    public event UnityAction<Vector2> OnScrollEvent = delegate { };
     public event UnityAction OnJumpEvent = delegate { };
     public event UnityAction OnInteractEvent = delegate { };
+    public event UnityAction OnPickUpEvent = delegate { };
+    public event UnityAction OnDropEvent = delegate { };
 
     public static event UnityAction OnPauseEvent;   // static so the UI can listen without a reference
 
@@ -42,20 +45,31 @@ public class PlayerInputController : MonoBehaviour, IPlayerActions
     public void OnLook(InputAction.CallbackContext context)
         => OnLookEvent.Invoke(context.ReadValue<Vector2>());
 
+    public void OnScroll(InputAction.CallbackContext context)
+        => OnScrollEvent.Invoke(context.ReadValue<Vector2>());
+
     public void OnJump(InputAction.CallbackContext context)
     {
-        OnJumpEvent.Invoke();
-        // No va el context.performed
-        if (context.performed) {
-            Debug.Log("Jump input received 22");
+        if (context.started)
+        {
             OnJumpEvent.Invoke();
         }
     }
 
     public void OnInteract(InputAction.CallbackContext context)
     {
-        Debug.Log("Interact input received");
-        if (context.performed) OnInteractEvent.Invoke();
+        if (context.started)
+        {
+            OnInteractEvent.Invoke();
+        }
+        /*
+         * No va el context.performed
+        if (context.performed)
+        {
+            Debug.Log("performed");
+            OnInteractEvent.Invoke();
+        }
+        */
     }
 
     public void OnPauseGame(InputAction.CallbackContext context)
@@ -66,7 +80,13 @@ public class PlayerInputController : MonoBehaviour, IPlayerActions
 
     public void OnPickUp(InputAction.CallbackContext context)
     {
-        Debug.Log("PickUp input received");
-        throw new System.NotImplementedException();
+        if (context.started)
+        {
+            OnPickUpEvent.Invoke();
+        }
+        if (context.canceled)
+        {
+            OnDropEvent.Invoke();
+        }
     }
 }

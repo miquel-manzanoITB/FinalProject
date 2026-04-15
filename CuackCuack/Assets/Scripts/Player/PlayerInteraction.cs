@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 public class PlayerInteraction : MonoBehaviour
 {
@@ -16,20 +15,57 @@ public class PlayerInteraction : MonoBehaviour
     private Interactable _hovered;
     private Interactable _dragging;
     private float _dragDistance;
+    private bool _isDragging;
+    private float _scrollDirection;
+
+    private PlayerInputController _input;
+
+    void Awake()
+    {
+        _input = GetComponent<PlayerInputController>();
+    }
+
+    void OnEnable()
+    {
+        _input.OnInteractEvent += OnInteract;
+        _input.OnPickUpEvent += OnPickUp;
+        _input.OnDropEvent += OnDrop;
+        _input.OnScrollEvent += OnScroll;
+    }
+
+    void OnDisable()
+    {
+        _input.OnInteractEvent -= OnInteract;
+        _input.OnPickUpEvent -= OnPickUp;
+        _input.OnDropEvent -= OnDrop;
+        _input.OnScrollEvent -= OnScroll;
+    }
 
     void Update()
     {
         HandleHover();
         HandleDragInput();
         HandleScroll();
-        HandleInteract();
     }
 
-    void HandleInteract()
+    void OnInteract()
     {
-        // Al pulsar E cerca de un objeto → Interact()
-        if (Keyboard.current.eKey.wasPressedThisFrame && _hovered != null)
+        if (_hovered != null)
             _hovered.Interact();
+    }
+
+    void OnPickUp()
+    {
+        _isDragging = true;
+    }
+    void OnDrop()
+    {
+        _isDragging = false;
+    }
+
+    void OnScroll(Vector2 dir)
+    {
+        _scrollDirection = dir.y;
     }
 
     // Detecta qué objeto está mirando el jugador
@@ -55,7 +91,7 @@ public class PlayerInteraction : MonoBehaviour
     void HandleDragInput()
     {
         // Empezar arrastre
-        if (Mouse.current.leftButton.wasPressedThisFrame && _hovered != null && _dragging == null)
+        if (_isDragging && _hovered != null && _dragging == null)
         {
             Ray ray = playerCamera.ScreenPointToRay(new Vector2(Screen.width / 2, Screen.height / 2));
             if (Physics.Raycast(ray, out RaycastHit hit, interactRange, interactableLayer))
@@ -67,7 +103,7 @@ public class PlayerInteraction : MonoBehaviour
         }
 
         // Arrastrar cada frame
-        if (_dragging != null && Mouse.current.leftButton.isPressed)
+        if (_dragging != null && _isDragging)
         {
             Ray ray = playerCamera.ScreenPointToRay(new Vector2(Screen.width / 2, Screen.height / 2));
             Vector3 targetPos = ray.GetPoint(_dragDistance);
@@ -75,7 +111,7 @@ public class PlayerInteraction : MonoBehaviour
         }
 
         // Soltar
-        if (Mouse.current.leftButton.wasReleasedThisFrame && _dragging != null)
+        if (!_isDragging && _dragging != null)
         {
             _dragging.StopDrag();
             _dragging = null;
@@ -86,8 +122,7 @@ public class PlayerInteraction : MonoBehaviour
     void HandleScroll()
     {
         if (_dragging == null) return;
-        float scroll = Mouse.current.scroll.ReadValue().y;
-        _dragDistance += scroll * scrollSpeed * Time.deltaTime;
+        _dragDistance += _scrollDirection * scrollSpeed * Time.deltaTime;
         _dragDistance = Mathf.Clamp(_dragDistance, minDragDistance, maxDragDistance);
     }
 }
