@@ -86,6 +86,7 @@ public class PlayerInteraction : MonoBehaviour
         {
             _hovered = null;
         }
+        Debug.DrawRay(ray.origin, ray.direction * interactRange, _hovered != null ? Color.green : Color.red);
     }
 
     void HandleDragInput()

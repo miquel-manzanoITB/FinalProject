@@ -402,9 +402,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e43c897fb1fb6ce428be2a431c883b1d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Interactable
-  isDraggable: 1
-  isPickable: 0
-  hintText: Hold to drag
+  isDraggable: 0
   dragForce: 50
   maxDragDistance: 3
   onInteract:
@@ -1059,8 +1057,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Interactable
   isDraggable: 1
-  isPickable: 0
-  hintText: Hold to drag
   dragForce: 50
   maxDragDistance: 3
   onInteract:

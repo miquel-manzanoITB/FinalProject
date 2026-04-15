@@ -5,8 +5,6 @@ public class Interactable : MonoBehaviour
 {
     [Header("Settings")]
     public bool isDraggable = true;       // ¿Se puede arrastrar?
-    public bool isPickable = false;        // ¿Se puede coger del todo?
-    public string hintText = "Hold to drag"; // Texto de hint (para UI futura)
 
     [Header("Drag Physics")]
     public float dragForce = 50f;
