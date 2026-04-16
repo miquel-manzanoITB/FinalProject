@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 public class PlayerInteraction : MonoBehaviour
 {
@@ -11,6 +12,9 @@ public class PlayerInteraction : MonoBehaviour
     public float scrollSpeed = 0.5f;
     public float minDragDistance = 1f;
     public float maxDragDistance = 4f;
+
+    [Header("Crosshair")]
+    public Image crosshair;
 
     private Interactable _hovered;
     private Interactable _dragging;
@@ -80,11 +84,13 @@ public class PlayerInteraction : MonoBehaviour
             {
                 _hovered = interactable;
                 // Aquí podrías activar un crosshair o hint en el futuro
+                crosshair.color = Color.green; // Ejemplo: cambiar color del crosshair
             }
         }
         else
         {
             _hovered = null;
+            crosshair.color = Color.white; // Ejemplo: cambiar color del crosshair cuando no hay objeto
         }
         Debug.DrawRay(ray.origin, ray.direction * interactRange, _hovered != null ? Color.green : Color.red);
     }
