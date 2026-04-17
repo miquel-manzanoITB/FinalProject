@@ -61,6 +61,8 @@ public class PlayerInteraction : MonoBehaviour
     void OnPickUp()
     {
         _isDragging = true;
+        if (_hovered != null)
+            _hovered.PickUp();
     }
     void OnDrop()
     {

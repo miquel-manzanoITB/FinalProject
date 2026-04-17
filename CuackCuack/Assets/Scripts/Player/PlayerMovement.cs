@@ -114,25 +114,13 @@ public class PlayerMovement : MonoBehaviour
     {
         Ray ray = new Ray(transform.position, Vector3.down);
         Vector3 origin = transform.position + Vector3.up * (groundCheckRadius + 0.1f);
-        _isGrounded = Physics.SphereCast(origin, groundCheckRadius, Vector3.down, out _, rayLength, groundLayer);
+        //_isGrounded = Physics.SphereCast(origin, groundCheckRadius, Vector3.down, out _, rayLength, groundLayer);
+        _isGrounded = Physics.Raycast(origin, Vector3.down, rayLength, groundLayer);
+        Debug.DrawRay(origin, Vector3.down * rayLength, _isGrounded ? Color.green : Color.red);
     }
 
     void ApplyDrag()
     {
         _rb.linearDamping = _isGrounded ? groundDrag : airDrag;
-    }
-
-    // ── Gizmos ────────────────────────────────────────────────────────────────
-
-    void OnDrawGizmos()
-    {
-        /*
-        Gizmos.color = _isGrounded ? Color.green : Color.red;
-        Gizmos.DrawLine(transform.position, transform.position + Vector3.down * rayLength);
-        Gizmos.DrawWireSphere(transform.position + Vector3.down * rayLength, 0.05f);
-        */
-        Gizmos.color = _isGrounded ? Color.green : Color.red;
-        Gizmos.DrawLine(transform.position, transform.position + Vector3.down * rayLength);
-        Gizmos.DrawWireSphere(transform.position + Vector3.down * rayLength, groundCheckRadius);
     }
 }
