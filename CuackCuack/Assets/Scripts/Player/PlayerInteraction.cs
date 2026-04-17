@@ -13,7 +13,7 @@ public class PlayerInteraction : MonoBehaviour
     public LayerMask interactableLayer;
 
     [Header("Drag Distance")]
-    public float scrollSpeed = 0.5f;
+    public float scrollSpeed = 5f;          // units/sec
     public float minDragDistance = 1f;
     public float maxDragDistance = 4f;
 
@@ -33,7 +33,7 @@ public class PlayerInteraction : MonoBehaviour
     private Interactable _dragging;
     private float _dragDistance;
     private bool _isDragging;
-    private float _scrollDirection;
+    private float _scrollDelta;       // raw scroll this frame
     private bool _isRotating;
     private Vector2 _rotateDelta;
 
@@ -72,6 +72,9 @@ public class PlayerInteraction : MonoBehaviour
         HandleDragInput();
         HandleScroll();
         HandleRotation();
+
+        // Consume scroll delta each frame — prevents accumulation
+        _scrollDelta = 0f;
     }
 
     // ── Input handlers ────────────────────────────────────────────────────────
@@ -86,11 +89,10 @@ public class PlayerInteraction : MonoBehaviour
 
     void OnDrop() { _isDragging = false; }
 
-    void OnScroll(Vector2 dir) { _scrollDirection = dir.y; }
+    void OnScroll(Vector2 dir) { _scrollDelta = dir.y; }
 
     void OnRotateObject(Vector2 delta)
     {
-        // Only rotate when actually holding an object
         if (_dragging != null) _rotateDelta = delta;
     }
 
@@ -120,7 +122,7 @@ public class PlayerInteraction : MonoBehaviour
 
     void HandleDragInput()
     {
-        // Start dragging
+        // ── Start dragging ────────────────────────────────────────────────────
         if (_isDragging && _hovered != null && _dragging == null)
         {
             Ray ray = CenterRay();
@@ -128,6 +130,10 @@ public class PlayerInteraction : MonoBehaviour
             {
                 _dragging = _hovered;
                 _dragDistance = hit.distance;
+
+                // Give the object a reference to the config so it can self-manage gravity/collision
+                if (weightConfig != null)
+                    _dragging.InjectWeightConfig(weightConfig);
 
                 float damping = weightConfig
                     ? weightConfig.GetDragDamping(_dragging.weight)
@@ -138,7 +144,7 @@ public class PlayerInteraction : MonoBehaviour
             }
         }
 
-        // Drag every frame
+        // ── Drag every frame ──────────────────────────────────────────────────
         if (_dragging != null && _isDragging)
         {
             Vector3 targetPos = CenterRay().GetPoint(_dragDistance);
@@ -149,7 +155,7 @@ public class PlayerInteraction : MonoBehaviour
             _dragging.DragTowards(targetPos, force);
         }
 
-        // Release
+        // ── Release ───────────────────────────────────────────────────────────
         if (!_isDragging && _dragging != null)
         {
             _dragging.StopDrag();
@@ -161,15 +167,19 @@ public class PlayerInteraction : MonoBehaviour
     void HandleScroll()
     {
         if (_dragging == null) return;
-        _dragDistance += _scrollDirection * scrollSpeed * Time.deltaTime;
-        _dragDistance = Mathf.Clamp(_dragDistance, minDragDistance, maxDragDistance);
+
+        // ── FIX: scroll only moves the drag distance — never pushes the player ──
+        // We clamp before applying so the object never tries to move behind the
+        // camera or beyond reach, which was what caused the object to push the player.
+        float newDistance = _dragDistance + _scrollDelta * scrollSpeed * Time.deltaTime;
+        _dragDistance = Mathf.Clamp(newDistance, minDragDistance, maxDragDistance);
     }
 
     void HandleRotation()
     {
         if (_dragging == null || _rotateDelta == Vector2.zero) return;
         _dragging.ApplyRotation(_rotateDelta, playerCamera.transform, rotateSensitivity);
-        _rotateDelta = Vector2.zero; // consume delta
+        _rotateDelta = Vector2.zero;
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
