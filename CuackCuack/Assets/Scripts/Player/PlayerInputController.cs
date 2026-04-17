@@ -20,11 +20,15 @@ public class PlayerInputController : MonoBehaviour, IPlayerActions
     public event UnityAction OnPickUpEvent = delegate { };
     public event UnityAction OnDropEvent = delegate { };
 
-    public static event UnityAction OnPauseEvent;   // static so the UI can listen without a reference
+    /// <summary>Fires when R is held — carries raw mouse delta for object rotation.</summary>
+    public event UnityAction<Vector2> OnRotateObjectEvent = delegate { };
+
+    public static event UnityAction OnPauseEvent;
 
     // ── Internal ──────────────────────────────────────────────────────────────
 
     private InputSystem_Actions _inputActions;
+    private bool _isRotating;
 
     // ── Unity lifecycle ───────────────────────────────────────────────────────
 
@@ -36,6 +40,13 @@ public class PlayerInputController : MonoBehaviour, IPlayerActions
 
     void OnEnable() => _inputActions.Enable();
     void OnDisable() => _inputActions.Disable();
+
+    void Update()
+    {
+        // While R is held, forward the current mouse delta every frame
+        if (_isRotating)
+            OnRotateObjectEvent.Invoke(_inputActions.Player.Look.ReadValue<Vector2>());
+    }
 
     // ── IPlayerActions callbacks ──────────────────────────────────────────────
 
@@ -50,43 +61,29 @@ public class PlayerInputController : MonoBehaviour, IPlayerActions
 
     public void OnJump(InputAction.CallbackContext context)
     {
-        if (context.started)
-        {
-            OnJumpEvent.Invoke();
-        }
+        if (context.started) OnJumpEvent.Invoke();
     }
 
     public void OnInteract(InputAction.CallbackContext context)
     {
-        if (context.started)
-        {
-            OnInteractEvent.Invoke();
-        }
-        /*
-         * No va el context.performed
-        if (context.performed)
-        {
-            Debug.Log("performed");
-            OnInteractEvent.Invoke();
-        }
-        */
+        if (context.started) OnInteractEvent.Invoke();
     }
 
     public void OnPauseGame(InputAction.CallbackContext context)
     {
-        Debug.Log("Pause input received");
         if (context.performed) OnPauseEvent?.Invoke();
     }
 
     public void OnPickUp(InputAction.CallbackContext context)
     {
-        if (context.started)
-        {
-            OnPickUpEvent.Invoke();
-        }
-        if (context.canceled)
-        {
-            OnDropEvent.Invoke();
-        }
+        if (context.started) OnPickUpEvent.Invoke();
+        if (context.canceled) OnDropEvent.Invoke();
+    }
+
+    /// <summary>Bound to the RotateObject action (R key) in the Input Asset.</summary>
+    public void OnRotateObject(InputAction.CallbackContext context)
+    {
+        if (context.started) _isRotating = true;
+        if (context.canceled) _isRotating = false;
     }
 }

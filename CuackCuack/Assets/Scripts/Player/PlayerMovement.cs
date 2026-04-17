@@ -29,6 +29,7 @@ public class PlayerMovement : MonoBehaviour
     private PlayerCamera _playerCamera;
     private Vector2 _moveInput;
     private bool _isGrounded;
+    private float _speedPenalty = 1f;   // 1 = no penalty, <1 = slower
 
     // ── Unity lifecycle ───────────────────────────────────────────────────────
 
@@ -60,10 +61,14 @@ public class PlayerMovement : MonoBehaviour
         _playerCamera.SetMoving(_moveInput != Vector2.zero && _isGrounded);
     }
 
-    void FixedUpdate()
-    {
-        Move();
-    }
+    void FixedUpdate() { Move(); }
+
+    // ── Public API (used by PlayerInteraction for weight penalty) ─────────────
+
+    /// <param name="penalty">Speed multiplier: 1 = full speed, 0.3 = 30% speed.</param>
+    public void SetSpeedPenalty(float penalty) => _speedPenalty = Mathf.Clamp01(penalty);
+
+    public void ResetSpeedPenalty() => _speedPenalty = 1f;
 
     // ── Input handlers ────────────────────────────────────────────────────────
 
@@ -71,12 +76,7 @@ public class PlayerMovement : MonoBehaviour
 
     void OnJump()
     {
-        Debug.Log("Jump input received");
-        if (_isGrounded)
-        {
-            Jump();
-            Debug.Log("Jump executed");
-        }
+        if (_isGrounded) Jump();
     }
 
     // ── Private methods ───────────────────────────────────────────────────────
@@ -86,20 +86,20 @@ public class PlayerMovement : MonoBehaviour
         Vector3 direction = transform.right * _moveInput.x
                           + transform.forward * _moveInput.y;
 
-        _rb.AddForce(direction * moveSpeed, ForceMode.VelocityChange);
+        float effectiveSpeed = moveSpeed * _speedPenalty;
+        _rb.AddForce(direction * effectiveSpeed, ForceMode.VelocityChange);
 
-        // Cap horizontal speed so the player doesn't accelerate forever
+        // Cap horizontal speed
         Vector3 flatVelocity = new Vector3(_rb.linearVelocity.x, 0f, _rb.linearVelocity.z);
-        if (flatVelocity.magnitude > moveSpeed)
+        if (flatVelocity.magnitude > effectiveSpeed)
         {
-            Vector3 capped = flatVelocity.normalized * moveSpeed;
+            Vector3 capped = flatVelocity.normalized * effectiveSpeed;
             _rb.linearVelocity = new Vector3(capped.x, _rb.linearVelocity.y, capped.z);
         }
     }
 
     void Jump()
     {
-        // Reset vertical velocity for a consistent jump height
         _rb.linearVelocity = new Vector3(_rb.linearVelocity.x, 0f, _rb.linearVelocity.z);
         _rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
     }
@@ -112,9 +112,7 @@ public class PlayerMovement : MonoBehaviour
 
     void CheckGround()
     {
-        Ray ray = new Ray(transform.position, Vector3.down);
         Vector3 origin = transform.position + Vector3.up * (groundCheckRadius + 0.1f);
-        //_isGrounded = Physics.SphereCast(origin, groundCheckRadius, Vector3.down, out _, rayLength, groundLayer);
         _isGrounded = Physics.Raycast(origin, Vector3.down, rayLength, groundLayer);
         Debug.DrawRay(origin, Vector3.down * rayLength, _isGrounded ? Color.green : Color.red);
     }

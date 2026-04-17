@@ -4,32 +4,44 @@ using UnityEngine.Events;
 public class Interactable : MonoBehaviour
 {
     [Header("Settings")]
-    public bool isDraggable = true;       // ¿Se puede arrastrar?
+    public bool isDraggable = true;
 
-    [Header("Drag Physics")]
-    public float dragForce = 50f;
-    public float maxDragDistance = 3f;     // Distancia máxima al arrastrar
+    [Header("Weight")]
+    [Tooltip("Object weight in kg. Affects drag force, player speed and object damping.")]
+    public float weight = 5f;
 
     [Header("Events")]
-    public UnityEvent onInteract;          // Para conectar lógica custom desde el Inspector
+    public UnityEvent onInteract;
     public UnityEvent onPickUp;
 
     private Rigidbody _rb;
 
     void Awake() => _rb = GetComponent<Rigidbody>();
 
-    // Llamado por PlayerInteraction cuando empieza el arrastre
-    public void StartDrag() { if (_rb) _rb.linearDamping = 10f; }
+    // Called by PlayerInteraction when dragging starts
+    public void StartDrag(float damping)
+    {
+        if (_rb) _rb.linearDamping = damping;
+    }
 
-    // Llamado cada frame mientras se arrastra
-    public void DragTowards(Vector3 targetPos)
+    // Called every frame while being dragged
+    public void DragTowards(Vector3 targetPos, float force)
     {
         if (!isDraggable || _rb == null) return;
-        Vector3 dir = targetPos - transform.position;
-        _rb.AddForce(dir * dragForce, ForceMode.Force);
+        Vector3 direction = targetPos - transform.position;
+        _rb.AddForce(direction * force, ForceMode.Force);
     }
 
     public void StopDrag() { if (_rb) _rb.linearDamping = 1f; }
+
+    // Rotates the object around camera axes using mouse delta
+    public void ApplyRotation(Vector2 mouseDelta, Transform cameraTransform, float sensitivity)
+    {
+        if (_rb == null) return;
+        _rb.MoveRotation(_rb.rotation
+            * Quaternion.AngleAxis(mouseDelta.x * sensitivity, cameraTransform.up)
+            * Quaternion.AngleAxis(-mouseDelta.y * sensitivity, cameraTransform.right));
+    }
 
     public void Interact() => onInteract?.Invoke();
     public void PickUp() => onPickUp?.Invoke();

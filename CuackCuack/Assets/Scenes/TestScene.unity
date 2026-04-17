@@ -402,9 +402,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e43c897fb1fb6ce428be2a431c883b1d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Interactable
-  isDraggable: 0
-  dragForce: 50
-  maxDragDistance: 3
+  isDraggable: 1
+  weight: 20
   onInteract:
     m_PersistentCalls:
       m_Calls: []
@@ -807,8 +806,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Interactable
   isDraggable: 1
-  dragForce: 50
-  maxDragDistance: 3
+  weight: 5
   onInteract:
     m_PersistentCalls:
       m_Calls: []
@@ -911,8 +909,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Interactable
   isDraggable: 1
-  dragForce: 50
-  maxDragDistance: 3
+  weight: 5
   onInteract:
     m_PersistentCalls:
       m_Calls: []
@@ -1543,8 +1540,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Interactable
   isDraggable: 1
-  dragForce: 50
-  maxDragDistance: 3
+  weight: 100
   onInteract:
     m_PersistentCalls:
       m_Calls:
@@ -1736,8 +1732,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Interactable
   isDraggable: 1
-  dragForce: 50
-  maxDragDistance: 3
+  weight: 5
   onInteract:
     m_PersistentCalls:
       m_Calls: []
@@ -2201,6 +2196,8 @@ MonoBehaviour:
   scrollSpeed: 10
   minDragDistance: 1
   maxDragDistance: 3
+  rotateSensitivity: 0.2
+  weightConfig: {fileID: 11400000, guid: 75abd4756ecc45a4096d8e60f2c22756, type: 2}
   crosshair: {fileID: 2017590542}
 --- !u!114 &2141685916
 MonoBehaviour:
