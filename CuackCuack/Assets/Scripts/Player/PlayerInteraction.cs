@@ -13,6 +13,10 @@ public class PlayerInteraction : MonoBehaviour
     public float minDragDistance = 1f;
     public float maxDragDistance = 4f;
 
+    [Header("Object Rotation")]
+    [Tooltip("Mouse sensitivity when rotating a held object with R + mouse.")]
+    public float rotateSensitivity = 0.2f;
+
     [Header("Crosshair")]
     public Image crosshair;
 
@@ -21,6 +25,8 @@ public class PlayerInteraction : MonoBehaviour
     private float _dragDistance;
     private bool _isDragging;
     private float _scrollDirection;
+    private bool _isRotating;
+    private Vector2 _rotateDelta;
 
     private PlayerInputController _input;
 
@@ -35,6 +41,7 @@ public class PlayerInteraction : MonoBehaviour
         _input.OnPickUpEvent += OnPickUp;
         _input.OnDropEvent += OnDrop;
         _input.OnScrollEvent += OnScroll;
+        _input.OnRotateObjectEvent += OnRotateObject;
     }
 
     void OnDisable()
@@ -43,6 +50,7 @@ public class PlayerInteraction : MonoBehaviour
         _input.OnPickUpEvent -= OnPickUp;
         _input.OnDropEvent -= OnDrop;
         _input.OnScrollEvent -= OnScroll;
+        _input.OnRotateObjectEvent -= OnRotateObject;
     }
 
     void Update()
@@ -50,6 +58,7 @@ public class PlayerInteraction : MonoBehaviour
         HandleHover();
         HandleDragInput();
         HandleScroll();
+        HandleRotation();
     }
 
     void OnInteract()
@@ -72,6 +81,11 @@ public class PlayerInteraction : MonoBehaviour
     void OnScroll(Vector2 dir)
     {
         _scrollDirection = dir.y;
+    }
+
+    void OnRotateObject(Vector2 delta)
+    {
+        if (_dragging != null) _rotateDelta = delta;
     }
 
     // Detecta qué objeto está mirando el jugador
@@ -133,5 +147,12 @@ public class PlayerInteraction : MonoBehaviour
         if (_dragging == null) return;
         _dragDistance += _scrollDirection * scrollSpeed * Time.deltaTime;
         _dragDistance = Mathf.Clamp(_dragDistance, minDragDistance, maxDragDistance);
+    }
+
+    void HandleRotation()
+    {
+        if (_dragging == null || _rotateDelta == Vector2.zero) return;
+        _dragging.ApplyRotation(_rotateDelta, playerCamera.transform, rotateSensitivity);
+        _rotateDelta = Vector2.zero;
     }
 }

@@ -29,6 +29,14 @@ public class Interactable : MonoBehaviour
         _rb.AddForce(dir * dragForce, ForceMode.Force);
     }
 
+    public void ApplyRotation(Vector2 mouseDelta, Transform cameraTransform, float sensitivity)
+    {
+        if (_rb == null) return;
+        _rb.MoveRotation(_rb.rotation
+            * Quaternion.AngleAxis(mouseDelta.x * sensitivity, cameraTransform.up)
+            * Quaternion.AngleAxis(-mouseDelta.y * sensitivity, cameraTransform.right));
+    }
+
     public void StopDrag() { if (_rb) _rb.linearDamping = 1f; }
 
     public void Interact() => onInteract?.Invoke();

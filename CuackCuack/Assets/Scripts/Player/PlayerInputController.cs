@@ -19,12 +19,14 @@ public class PlayerInputController : MonoBehaviour, IPlayerActions
     public event UnityAction OnInteractEvent = delegate { };
     public event UnityAction OnPickUpEvent = delegate { };
     public event UnityAction OnDropEvent = delegate { };
+    public event UnityAction<Vector2> OnRotateObjectEvent = delegate { };
 
     public static event UnityAction OnPauseEvent;   // static so the UI can listen without a reference
 
     // ── Internal ──────────────────────────────────────────────────────────────
 
     private InputSystem_Actions _inputActions;
+    private bool _isRotating;
 
     // ── Unity lifecycle ───────────────────────────────────────────────────────
 
@@ -32,6 +34,12 @@ public class PlayerInputController : MonoBehaviour, IPlayerActions
     {
         _inputActions = new InputSystem_Actions();
         _inputActions.Player.SetCallbacks(this);
+    }
+    void Update()
+    {
+        // While R is held, forward the current mouse delta every frame
+        if (_isRotating)
+            OnRotateObjectEvent.Invoke(_inputActions.Player.Look.ReadValue<Vector2>());
     }
 
     void OnEnable() => _inputActions.Enable();
@@ -43,7 +51,16 @@ public class PlayerInputController : MonoBehaviour, IPlayerActions
         => OnMoveEvent.Invoke(context.ReadValue<Vector2>());
 
     public void OnLook(InputAction.CallbackContext context)
-        => OnLookEvent.Invoke(context.ReadValue<Vector2>());
+    {
+        if (!_isRotating)
+        {
+            OnLookEvent.Invoke(context.ReadValue<Vector2>());
+        }
+        else
+        {
+            OnLookEvent.Invoke(Vector2.zero); // Stop camera rotation while rotating an object
+        }
+    }
 
     public void OnScroll(InputAction.CallbackContext context)
         => OnScrollEvent.Invoke(context.ReadValue<Vector2>());
@@ -87,6 +104,20 @@ public class PlayerInputController : MonoBehaviour, IPlayerActions
         if (context.canceled)
         {
             OnDropEvent.Invoke();
+        }
+    }
+
+    public void OnRotateObject(InputAction.CallbackContext context)
+    {
+        if (context.started)
+        {
+            Debug.Log("Started rotating object");
+            _isRotating = true;
+        }
+        if (context.canceled)
+        {
+            Debug.Log("Stopped rotating object");
+            _isRotating = false;
         }
     }
 }
