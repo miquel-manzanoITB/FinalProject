@@ -26,7 +26,7 @@ public class PlayerInputController : MonoBehaviour, IPlayerActions
     // ── Internal ──────────────────────────────────────────────────────────────
 
     private InputSystem_Actions _inputActions;
-    private bool _isRotating;
+    private bool _cameraLocked;
 
     // ── Unity lifecycle ───────────────────────────────────────────────────────
 
@@ -34,12 +34,6 @@ public class PlayerInputController : MonoBehaviour, IPlayerActions
     {
         _inputActions = new InputSystem_Actions();
         _inputActions.Player.SetCallbacks(this);
-    }
-    void Update()
-    {
-        // While R is held, forward the current mouse delta every frame
-        if (_isRotating)
-            OnRotateObjectEvent.Invoke(_inputActions.Player.Look.ReadValue<Vector2>());
     }
 
     void OnEnable() => _inputActions.Enable();
@@ -50,15 +44,16 @@ public class PlayerInputController : MonoBehaviour, IPlayerActions
     public void OnMove(InputAction.CallbackContext context)
         => OnMoveEvent.Invoke(context.ReadValue<Vector2>());
 
+    public void SetCameraLocked(bool locked) => _cameraLocked = locked;
     public void OnLook(InputAction.CallbackContext context)
     {
-        if (!_isRotating)
+        if (!_cameraLocked)
         {
             OnLookEvent.Invoke(context.ReadValue<Vector2>());
         }
         else
         {
-            OnLookEvent.Invoke(Vector2.zero); // Stop camera rotation while rotating an object
+            OnLookEvent.Invoke(Vector2.zero);  // ignore look input when camera is locked
         }
     }
 
@@ -109,15 +104,7 @@ public class PlayerInputController : MonoBehaviour, IPlayerActions
 
     public void OnRotateObject(InputAction.CallbackContext context)
     {
-        if (context.started)
-        {
-            Debug.Log("Started rotating object");
-            _isRotating = true;
-        }
-        if (context.canceled)
-        {
-            Debug.Log("Stopped rotating object");
-            _isRotating = false;
-        }
+        if (context.started) OnRotateObjectEvent.Invoke(Vector2.one);   // señal de inicio
+        if (context.canceled) OnRotateObjectEvent.Invoke(Vector2.zero);  // señal de fin
     }
 }

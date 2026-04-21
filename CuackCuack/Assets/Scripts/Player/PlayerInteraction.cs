@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 public class PlayerInteraction : MonoBehaviour
@@ -83,9 +84,10 @@ public class PlayerInteraction : MonoBehaviour
         _scrollDirection = dir.y;
     }
 
-    void OnRotateObject(Vector2 delta)
+    void OnRotateObject(Vector2 signal)
     {
-        if (_dragging != null) _rotateDelta = delta;
+        // signal.x > 0 → started,  == zero → canceled
+        _isRotating = signal != Vector2.zero;
     }
 
     // Detecta qué objeto está mirando el jugador
@@ -151,8 +153,19 @@ public class PlayerInteraction : MonoBehaviour
 
     void HandleRotation()
     {
-        if (_dragging == null || _rotateDelta == Vector2.zero) return;
-        _dragging.ApplyRotation(_rotateDelta, playerCamera.transform, rotateSensitivity);
-        _rotateDelta = Vector2.zero;
+        // Solo bloqueamos la cámara si hay objeto siendo arrastrado
+        bool shouldRotate = _isRotating && _dragging != null;
+
+        // Bloquear/desbloquear cámara
+        // (necesitas una referencia a PlayerCamera o PlayerInputController)
+        // Opción sencilla: deshabilitar el look via evento
+        _input.SetCameraLocked(shouldRotate);
+
+        if (!shouldRotate) return;
+
+        // Leer el delta del ratón directamente aquí
+        Vector2 delta = Mouse.current.delta.ReadValue();
+        if (delta != Vector2.zero)
+            _dragging.ApplyRotation(delta, playerCamera.transform, rotateSensitivity);
     }
 }
