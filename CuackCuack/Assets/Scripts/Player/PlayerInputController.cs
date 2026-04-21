@@ -19,12 +19,14 @@ public class PlayerInputController : MonoBehaviour, IPlayerActions
     public event UnityAction OnInteractEvent = delegate { };
     public event UnityAction OnPickUpEvent = delegate { };
     public event UnityAction OnDropEvent = delegate { };
+    public event UnityAction<Vector2> OnRotateObjectEvent = delegate { };
 
     public static event UnityAction OnPauseEvent;   // static so the UI can listen without a reference
 
     // ── Internal ──────────────────────────────────────────────────────────────
 
     private InputSystem_Actions _inputActions;
+    private bool _cameraLocked;
 
     // ── Unity lifecycle ───────────────────────────────────────────────────────
 
@@ -42,8 +44,18 @@ public class PlayerInputController : MonoBehaviour, IPlayerActions
     public void OnMove(InputAction.CallbackContext context)
         => OnMoveEvent.Invoke(context.ReadValue<Vector2>());
 
+    public void SetCameraLocked(bool locked) => _cameraLocked = locked;
     public void OnLook(InputAction.CallbackContext context)
-        => OnLookEvent.Invoke(context.ReadValue<Vector2>());
+    {
+        if (!_cameraLocked)
+        {
+            OnLookEvent.Invoke(context.ReadValue<Vector2>());
+        }
+        else
+        {
+            OnLookEvent.Invoke(Vector2.zero);  // ignore look input when camera is locked
+        }
+    }
 
     public void OnScroll(InputAction.CallbackContext context)
         => OnScrollEvent.Invoke(context.ReadValue<Vector2>());
@@ -88,5 +100,11 @@ public class PlayerInputController : MonoBehaviour, IPlayerActions
         {
             OnDropEvent.Invoke();
         }
+    }
+
+    public void OnRotateObject(InputAction.CallbackContext context)
+    {
+        if (context.started) OnRotateObjectEvent.Invoke(Vector2.one);   // señal de inicio
+        if (context.canceled) OnRotateObjectEvent.Invoke(Vector2.zero);  // señal de fin
     }
 }

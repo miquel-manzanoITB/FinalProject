@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 public class PlayerInteraction : MonoBehaviour
@@ -13,6 +14,10 @@ public class PlayerInteraction : MonoBehaviour
     public float minDragDistance = 1f;
     public float maxDragDistance = 4f;
 
+    [Header("Object Rotation")]
+    [Tooltip("Mouse sensitivity when rotating a held object with R + mouse.")]
+    public float rotateSensitivity = 0.2f;
+
     [Header("Crosshair")]
     public Image crosshair;
 
@@ -21,6 +26,8 @@ public class PlayerInteraction : MonoBehaviour
     private float _dragDistance;
     private bool _isDragging;
     private float _scrollDirection;
+    private bool _isRotating;
+    private Vector2 _rotateDelta;
 
     private PlayerInputController _input;
 
@@ -35,6 +42,7 @@ public class PlayerInteraction : MonoBehaviour
         _input.OnPickUpEvent += OnPickUp;
         _input.OnDropEvent += OnDrop;
         _input.OnScrollEvent += OnScroll;
+        _input.OnRotateObjectEvent += OnRotateObject;
     }
 
     void OnDisable()
@@ -43,6 +51,7 @@ public class PlayerInteraction : MonoBehaviour
         _input.OnPickUpEvent -= OnPickUp;
         _input.OnDropEvent -= OnDrop;
         _input.OnScrollEvent -= OnScroll;
+        _input.OnRotateObjectEvent -= OnRotateObject;
     }
 
     void Update()
@@ -50,6 +59,7 @@ public class PlayerInteraction : MonoBehaviour
         HandleHover();
         HandleDragInput();
         HandleScroll();
+        HandleRotation();
     }
 
     void OnInteract()
@@ -72,6 +82,12 @@ public class PlayerInteraction : MonoBehaviour
     void OnScroll(Vector2 dir)
     {
         _scrollDirection = dir.y;
+    }
+
+    void OnRotateObject(Vector2 signal)
+    {
+        // signal.x > 0 → started,  == zero → canceled
+        _isRotating = signal != Vector2.zero;
     }
 
     // Detecta qué objeto está mirando el jugador
@@ -133,5 +149,23 @@ public class PlayerInteraction : MonoBehaviour
         if (_dragging == null) return;
         _dragDistance += _scrollDirection * scrollSpeed * Time.deltaTime;
         _dragDistance = Mathf.Clamp(_dragDistance, minDragDistance, maxDragDistance);
+    }
+
+    void HandleRotation()
+    {
+        // Solo bloqueamos la cámara si hay objeto siendo arrastrado
+        bool shouldRotate = _isRotating && _dragging != null;
+
+        // Bloquear/desbloquear cámara
+        // (necesitas una referencia a PlayerCamera o PlayerInputController)
+        // Opción sencilla: deshabilitar el look via evento
+        _input.SetCameraLocked(shouldRotate);
+
+        if (!shouldRotate) return;
+
+        // Leer el delta del ratón directamente aquí
+        Vector2 delta = Mouse.current.delta.ReadValue();
+        if (delta != Vector2.zero)
+            _dragging.ApplyRotation(delta, playerCamera.transform, rotateSensitivity);
     }
 }
