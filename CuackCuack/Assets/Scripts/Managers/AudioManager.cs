@@ -105,6 +105,7 @@ public class AudioManager : MonoBehaviour
     /// <summary>Plays a sound effect by name (defined in the Inspector).</summary>
     public void PlaySFX(string soundName)
     {
+        Debug.Log($"[AudioManager] PlaySFX('{soundName}')");
         if (!_sfxMap.TryGetValue(soundName, out var entry))
         {
             Debug.LogWarning($"[AudioManager] SFX '{soundName}' not found.");
