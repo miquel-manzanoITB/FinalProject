@@ -1,101 +1,105 @@
+using Player;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.Events;
+using UnityEngine.SceneManagement;
 
-/// <summary>
-/// Central game manager. Handles scene transitions, pause state and global game flow.
-/// Singleton — persists across scenes. Place on a single GameObject in your first scene.
-/// </summary>
-public class GameManager : MonoBehaviour
+namespace Managers
 {
-    public static GameManager Instance { get; private set; }
-
-    // ── Events ────────────────────────────────────────────────────────────────
-
-    public static event UnityAction<bool> OnPauseChanged;   // true = paused
-    public static event UnityAction OnGameStart;
-
-    // ── State ─────────────────────────────────────────────────────────────────
-
-    public bool IsPaused { get; private set; }
-
-    [Header("Scene Names")]
-    public string mainMenuScene = "MainMenu";
-    public string firstGameScene = "Level01";
-
-    // ── Singleton setup ───────────────────────────────────────────────────────
-
-    void Awake()
+    /// <summary>
+    /// Central game manager. Handles scene transitions, pause state and global game flow.
+    /// Singleton — persists across scenes. Place on a single GameObject in your first scene.
+    /// </summary>
+    public class GameManager : MonoBehaviour
     {
-        if (Instance != null && Instance != this)
+        public static GameManager Instance { get; private set; }
+
+        // ── Events ────────────────────────────────────────────────────────────────
+
+        public static event UnityAction<bool> OnPauseChanged;   // true = paused
+        public static event UnityAction OnGameStart;
+
+        // ── State ─────────────────────────────────────────────────────────────────
+
+        public bool IsPaused { get; private set; }
+
+        [Header("Scene Names")]
+        public string mainMenuScene = "MainMenu";
+        public string firstGameScene = "Level01";
+
+        // ── Singleton setup ───────────────────────────────────────────────────────
+
+        void Awake()
         {
-            Destroy(gameObject);
-            return;
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
         }
-        Instance = this;
-        DontDestroyOnLoad(gameObject);
-    }
 
-    void OnEnable()
-    {
-        PlayerInputController.OnPauseEvent += TogglePause;
-        SceneManager.sceneLoaded += OnSceneLoaded;
-    }
+        void OnEnable()
+        {
+            PlayerInputController.OnPauseEvent += TogglePause;
+            SceneManager.sceneLoaded += OnSceneLoaded;
+        }
 
-    void OnDisable()
-    {
-        PlayerInputController.OnPauseEvent -= TogglePause;
-        SceneManager.sceneLoaded -= OnSceneLoaded;
-    }
+        void OnDisable()
+        {
+            PlayerInputController.OnPauseEvent -= TogglePause;
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+        }
 
-    // ── Scene management ──────────────────────────────────────────────────────
+        // ── Scene management ──────────────────────────────────────────────────────
 
-    public void LoadScene(string sceneName)
-    {
-        SetPause(false);            // always unpause before transitioning
-        UIManager.Instance?.ShowLoadingScreen(true);
-        SceneManager.LoadScene(sceneName);
-    }
+        public void LoadScene(string sceneName)
+        {
+            SetPause(false);            // always unpause before transitioning
+            UIManager.Instance?.ShowLoadingScreen(true);
+            SceneManager.LoadScene(sceneName);
+        }
 
-    public void LoadScene(int buildIndex) => LoadScene(SceneManager.GetSceneByBuildIndex(buildIndex).name);
+        public void LoadScene(int buildIndex) => LoadScene(SceneManager.GetSceneByBuildIndex(buildIndex).name);
 
-    public void ReloadCurrentScene() => LoadScene(SceneManager.GetActiveScene().name);
+        public void ReloadCurrentScene() => LoadScene(SceneManager.GetActiveScene().name);
 
-    public void LoadMainMenu() => LoadScene(mainMenuScene);
+        public void LoadMainMenu() => LoadScene(mainMenuScene);
 
-    public void StartGame() => LoadScene(firstGameScene);
+        public void StartGame() => LoadScene(firstGameScene);
 
-    public void QuitGame()
-    {
+        public void QuitGame()
+        {
 #if UNITY_EDITOR
-        UnityEditor.EditorApplication.isPlaying = false;
+            UnityEditor.EditorApplication.isPlaying = false;
 #else
         Application.Quit();
 #endif
-    }
+        }
 
-    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
-    {
-        UIManager.Instance?.ShowLoadingScreen(false);
+        void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            UIManager.Instance?.ShowLoadingScreen(false);
 
-        bool isGameScene = scene.name != mainMenuScene;
-        if (isGameScene) OnGameStart?.Invoke();
-    }
+            bool isGameScene = scene.name != mainMenuScene;
+            if (isGameScene) OnGameStart?.Invoke();
+        }
 
-    // ── Pause ─────────────────────────────────────────────────────────────────
+        // ── Pause ─────────────────────────────────────────────────────────────────
 
-    public void TogglePause() => SetPause(!IsPaused);
+        public void TogglePause() => SetPause(!IsPaused);
 
-    public void SetPause(bool paused)
-    {
-        if (IsPaused == paused) return;
+        public void SetPause(bool paused)
+        {
+            if (IsPaused == paused) return;
 
-        IsPaused = paused;
-        Time.timeScale = paused ? 0f : 1f;
+            IsPaused = paused;
+            Time.timeScale = paused ? 0f : 1f;
 
-        Cursor.lockState = paused ? CursorLockMode.None : CursorLockMode.Locked;
-        Cursor.visible = paused;
+            Cursor.lockState = paused ? CursorLockMode.None : CursorLockMode.Locked;
+            Cursor.visible = paused;
 
-        OnPauseChanged?.Invoke(paused);
+            OnPauseChanged?.Invoke(paused);
+        }
     }
 }

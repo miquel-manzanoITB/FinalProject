@@ -1,126 +1,129 @@
 using UnityEngine;
 
-/// <summary>
-/// Handles player movement: walking, jumping and drag.
-/// Attach to the Player root GameObject.
-/// </summary>
-[RequireComponent(typeof(Rigidbody))]
-public class PlayerMovement : MonoBehaviour
+namespace Player
 {
-    [Header("Walk")]
-    public float moveSpeed = 4f;
-
-    [Header("Jump")]
-    public float jumpForce = 5f;
-
-    [Header("Drag")]
-    public float groundDrag = 6f;
-    public float airDrag = 1f;
-
-    [Header("Ground Check")]
-    public float rayLength = 1.1f;
-    public LayerMask groundLayer;
-    public float groundCheckRadius;
-
-    // ── Internal ──────────────────────────────────────────────────────────────
-
-    private Rigidbody _rb;
-    private PlayerInputController _input;
-    private PlayerCamera _playerCamera;
-    private Vector2 _moveInput;
-    private bool _isGrounded;
-
-    // ── Unity lifecycle ───────────────────────────────────────────────────────
-
-    void Awake()
+    /// <summary>
+    /// Handles player movement: walking, jumping and drag.
+    /// Attach to the Player root GameObject.
+    /// </summary>
+    [RequireComponent(typeof(Rigidbody))]
+    public class PlayerMovement : MonoBehaviour
     {
-        _rb = GetComponent<Rigidbody>();
-        _input = GetComponent<PlayerInputController>();
-        _playerCamera = GetComponent<PlayerCamera>();
+        [Header("Walk")]
+        public float moveSpeed = 4f;
 
-        _rb.freezeRotation = true;
-    }
+        [Header("Jump")]
+        public float jumpForce = 5f;
 
-    void OnEnable()
-    {
-        _input.OnMoveEvent += OnMove;
-        _input.OnJumpEvent += OnJump;
-    }
+        [Header("Drag")]
+        public float groundDrag = 6f;
+        public float airDrag = 1f;
 
-    void OnDisable()
-    {
-        _input.OnMoveEvent -= OnMove;
-        _input.OnJumpEvent -= OnJump;
-    }
+        [Header("Ground Check")]
+        public float rayLength = 1.1f;
+        public LayerMask groundLayer;
+        public float groundCheckRadius;
 
-    void Update()
-    {
-        CheckGround();
-        //ApplyDrag();
-        _playerCamera.SetMoving(_moveInput != Vector2.zero && _isGrounded);
-    }
+        // ── Internal ──────────────────────────────────────────────────────────────
 
-    void FixedUpdate()
-    {
-        Move();
-    }
+        private Rigidbody _rb;
+        private PlayerInputController _input;
+        private PlayerCamera _playerCamera;
+        private Vector2 _moveInput;
+        private bool _isGrounded;
 
-    // ── Input handlers ────────────────────────────────────────────────────────
+        // ── Unity lifecycle ───────────────────────────────────────────────────────
 
-    void OnMove(Vector2 input) => _moveInput = input;
-
-    void OnJump()
-    {
-        Debug.Log("Jump input received");
-        if (_isGrounded)
+        void Awake()
         {
-            Jump();
-            Debug.Log("Jump executed");
+            _rb = GetComponent<Rigidbody>();
+            _input = GetComponent<PlayerInputController>();
+            _playerCamera = GetComponent<PlayerCamera>();
+
+            _rb.freezeRotation = true;
         }
-    }
 
-    // ── Private methods ───────────────────────────────────────────────────────
-
-    void Move()
-    {
-        Vector3 direction = transform.right * _moveInput.x
-                          + transform.forward * _moveInput.y;
-
-        _rb.AddForce(direction * moveSpeed, ForceMode.VelocityChange);
-
-        // Cap horizontal speed so the player doesn't accelerate forever
-        Vector3 flatVelocity = new Vector3(_rb.linearVelocity.x, 0f, _rb.linearVelocity.z);
-        if (flatVelocity.magnitude > moveSpeed)
+        void OnEnable()
         {
-            Vector3 capped = flatVelocity.normalized * moveSpeed;
-            _rb.linearVelocity = new Vector3(capped.x, _rb.linearVelocity.y, capped.z);
+            _input.OnMoveEvent += OnMove;
+            _input.OnJumpEvent += OnJump;
         }
-    }
 
-    void Jump()
-    {
-        // Reset vertical velocity for a consistent jump height
-        _rb.linearVelocity = new Vector3(_rb.linearVelocity.x, 0f, _rb.linearVelocity.z);
-        _rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
-    }
+        void OnDisable()
+        {
+            _input.OnMoveEvent -= OnMove;
+            _input.OnJumpEvent -= OnJump;
+        }
 
-    public void SuperJump()
-    {
-        _rb.linearVelocity = new Vector3(_rb.linearVelocity.x, 0f, _rb.linearVelocity.z);
-        _rb.AddForce(Vector3.up * 100, ForceMode.Impulse);
-    }
+        void Update()
+        {
+            CheckGround();
+            //ApplyDrag();
+            _playerCamera.SetMoving(_moveInput != Vector2.zero && _isGrounded);
+        }
 
-    void CheckGround()
-    {
-        Ray ray = new Ray(transform.position, Vector3.down);
-        Vector3 origin = transform.position + Vector3.up * (groundCheckRadius + 0.1f);
-        //_isGrounded = Physics.SphereCast(origin, groundCheckRadius, Vector3.down, out _, rayLength, groundLayer);
-        _isGrounded = Physics.Raycast(origin, Vector3.down, rayLength, groundLayer);
-        Debug.DrawRay(origin, Vector3.down * rayLength, _isGrounded ? Color.green : Color.red);
-    }
+        void FixedUpdate()
+        {
+            Move();
+        }
 
-    void ApplyDrag()
-    {
-        _rb.linearDamping = _isGrounded ? groundDrag : airDrag;
+        // ── Input handlers ────────────────────────────────────────────────────────
+
+        void OnMove(Vector2 input) => _moveInput = input;
+
+        void OnJump()
+        {
+            Debug.Log("Jump input received");
+            if (_isGrounded)
+            {
+                Jump();
+                Debug.Log("Jump executed");
+            }
+        }
+
+        // ── Private methods ───────────────────────────────────────────────────────
+
+        void Move()
+        {
+            Vector3 direction = transform.right * _moveInput.x
+                                + transform.forward * _moveInput.y;
+
+            _rb.AddForce(direction * moveSpeed, ForceMode.VelocityChange);
+
+            // Cap horizontal speed so the player doesn't accelerate forever
+            Vector3 flatVelocity = new Vector3(_rb.linearVelocity.x, 0f, _rb.linearVelocity.z);
+            if (flatVelocity.magnitude > moveSpeed)
+            {
+                Vector3 capped = flatVelocity.normalized * moveSpeed;
+                _rb.linearVelocity = new Vector3(capped.x, _rb.linearVelocity.y, capped.z);
+            }
+        }
+
+        void Jump()
+        {
+            // Reset vertical velocity for a consistent jump height
+            _rb.linearVelocity = new Vector3(_rb.linearVelocity.x, 0f, _rb.linearVelocity.z);
+            _rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+        }
+
+        public void SuperJump()
+        {
+            _rb.linearVelocity = new Vector3(_rb.linearVelocity.x, 0f, _rb.linearVelocity.z);
+            _rb.AddForce(Vector3.up * 100, ForceMode.Impulse);
+        }
+
+        void CheckGround()
+        {
+            Ray ray = new Ray(transform.position, Vector3.down);
+            Vector3 origin = transform.position + Vector3.up * (groundCheckRadius + 0.1f);
+            //_isGrounded = Physics.SphereCast(origin, groundCheckRadius, Vector3.down, out _, rayLength, groundLayer);
+            _isGrounded = Physics.Raycast(origin, Vector3.down, rayLength, groundLayer);
+            Debug.DrawRay(origin, Vector3.down * rayLength, _isGrounded ? Color.green : Color.red);
+        }
+
+        void ApplyDrag()
+        {
+            _rb.linearDamping = _isGrounded ? groundDrag : airDrag;
+        }
     }
 }
