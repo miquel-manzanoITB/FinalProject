@@ -5,12 +5,10 @@ public class Interactable : MonoBehaviour
 {
     [Header("Settings")]
     public bool isDraggable = true;       // ¿Se puede arrastrar?
-    public bool isPickable = false;        // ¿Se puede coger del todo?
-    public string hintText = "Hold to drag"; // Texto de hint (para UI futura)
 
     [Header("Drag Physics")]
     public float dragForce = 50f;
-    public float maxDragDistance = 3f;     // Distancia máxima al arrastrar
+    //public float maxDragDistance = 3f;     // Distancia máxima al arrastrar
 
     [Header("Events")]
     public UnityEvent onInteract;          // Para conectar lógica custom desde el Inspector
@@ -29,6 +27,14 @@ public class Interactable : MonoBehaviour
         if (!isDraggable || _rb == null) return;
         Vector3 dir = targetPos - transform.position;
         _rb.AddForce(dir * dragForce, ForceMode.Force);
+    }
+
+    public void ApplyRotation(Vector2 mouseDelta, Transform cameraTransform, float sensitivity)
+    {
+        if (_rb == null) return;
+        _rb.MoveRotation(_rb.rotation
+            * Quaternion.AngleAxis(mouseDelta.x * sensitivity, cameraTransform.up)
+            * Quaternion.AngleAxis(-mouseDelta.y * sensitivity, cameraTransform.right));
     }
 
     public void StopDrag() { if (_rb) _rb.linearDamping = 1f; }
