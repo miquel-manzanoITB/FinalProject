@@ -3,9 +3,9 @@ using UnityEngine.UI;
 using TMPro;
 
 /// <summary>
-/// Manages all UI panels: HUD, pause menu, game over screen, loading screen.
-/// Singleton — add one instance to each scene that needs UI, or keep it DontDestroyOnLoad.
-/// Pair with GameManager events.
+/// Gestiona los paneles de UI: HUD, pausa y pantalla de carga.
+/// Singleton por escena — activa DontDestroyOnLoad si necesitas persistencia entre escenas.
+/// Se suscribe a los eventos de GameManager para reaccionar a cambios de estado.
 /// </summary>
 public class UIManager : MonoBehaviour
 {
@@ -14,80 +14,71 @@ public class UIManager : MonoBehaviour
     [Header("Panels")]
     public GameObject hudPanel;
     public GameObject pausePanel;
-    public GameObject gameOverPanel;
     public GameObject loadingPanel;
-    public GameObject mainMenuPanel;
 
     [Header("HUD Elements")]
-    public TextMeshProUGUI interactionHintText;   // "Press E to interact"
-
-    [Header("Pause Menu Buttons")]
-    public Button resumeButton;
-    public Button restartButton;
-    public Button mainMenuButton;
-    public Button quitButton;
-
-    [Header("Game Over")]
-    public Button gameOverRestartButton;
-    public Button gameOverMainMenuButton;
-    public TextMeshProUGUI gameOverTitleText;
+    public TextMeshProUGUI interactionHintText; // "Press E to interact"
 
     // ── Singleton ─────────────────────────────────────────────────────────────
 
     void Awake()
     {
+        // Si ya existe una instancia, destruimos el duplicado y salimos
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
+        DontDestroyOnLoad(gameObject);
+    }
+
+    void OnDestroy()
+    {
+        // Limpiamos la referencia estática para evitar referencias huérfanas
+        if (Instance == this) Instance = null;
     }
 
     // ── Unity lifecycle ───────────────────────────────────────────────────────
 
     void OnEnable()
     {
+        // Nos suscribimos a los eventos del GameManager mientras el objeto esté activo
         GameManager.OnPauseChanged += OnPauseChanged;
-        GameManager.OnGameOver += OnGameOver;
-        GameManager.OnGameStart += OnGameStart;
-
-        resumeButton?.onClick.AddListener(() => GameManager.Instance.TogglePause());
-        restartButton?.onClick.AddListener(() => GameManager.Instance.ReloadCurrentScene());
-        mainMenuButton?.onClick.AddListener(() => GameManager.Instance.LoadMainMenu());
-        quitButton?.onClick.AddListener(() => GameManager.Instance.QuitGame());
-
-        gameOverRestartButton?.onClick.AddListener(() => GameManager.Instance.ReloadCurrentScene());
-        gameOverMainMenuButton?.onClick.AddListener(() => GameManager.Instance.LoadMainMenu());
+        GameManager.OnGameStart    += OnGameStart;
     }
 
     void OnDisable()
     {
+        // Siempre desuscribirse para evitar llamadas a objetos destruidos o inactivos
         GameManager.OnPauseChanged -= OnPauseChanged;
-        GameManager.OnGameOver -= OnGameOver;
-        GameManager.OnGameStart -= OnGameStart;
+        GameManager.OnGameStart    -= OnGameStart;
+    }
+
+    void Start()
+    {
+        // Estado inicial: solo el HUD visible. Evita que el Inspector dicte el estado de arranque
+        SetPanel(hudPanel,     true);
+        SetPanel(pausePanel,   false);
+        SetPanel(loadingPanel, false);
     }
 
     // ── Panel control ─────────────────────────────────────────────────────────
 
+    // Restaura el estado de juego activo al iniciar o reiniciar la partida
     void OnGameStart()
     {
-        SetPanel(hudPanel, true);
+        SetPanel(hudPanel,   true);
         SetPanel(pausePanel, false);
-        SetPanel(gameOverPanel, false);
-        SetPanel(mainMenuPanel, false);
     }
 
+    // Alterna entre HUD y menú de pausa según el estado recibido
     void OnPauseChanged(bool paused)
     {
         SetPanel(pausePanel, paused);
-        SetPanel(hudPanel, !paused && !GameManager.Instance.IsGameOver);
+        SetPanel(hudPanel,   !paused);
     }
 
-    void OnGameOver()
-    {
-        SetPanel(gameOverPanel, true);
-        SetPanel(hudPanel, false);
-    }
-
+    /// <summary>Muestra u oculta la pantalla de carga. Llamar desde GameManager al cambiar de escena.</summary>
     public void ShowLoadingScreen(bool show) => SetPanel(loadingPanel, show);
 
+    // Activa o desactiva un panel de forma segura (null-safe)
     static void SetPanel(GameObject panel, bool active)
     {
         if (panel != null) panel.SetActive(active);
@@ -95,7 +86,10 @@ public class UIManager : MonoBehaviour
 
     // ── HUD helpers ───────────────────────────────────────────────────────────
 
-    /// <summary>Call from PlayerInteraction to show/hide the "Press E" hint.</summary>
+    /// <summary>
+    /// Muestra u oculta el hint de interacción según el mensaje recibido.
+    /// Llamar desde PlayerInteraction con el texto deseado, o vacío para ocultar.
+    /// </summary>
     public void ShowInteractionHint(string message)
     {
         if (interactionHintText == null) return;
@@ -103,5 +97,6 @@ public class UIManager : MonoBehaviour
         interactionHintText.gameObject.SetActive(!string.IsNullOrEmpty(message));
     }
 
+    /// <summary>Oculta el hint de interacción.</summary>
     public void HideInteractionHint() => ShowInteractionHint(string.Empty);
 }

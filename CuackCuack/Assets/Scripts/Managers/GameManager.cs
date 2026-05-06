@@ -14,12 +14,10 @@ public class GameManager : MonoBehaviour
 
     public static event UnityAction<bool> OnPauseChanged;   // true = paused
     public static event UnityAction OnGameStart;
-    public static event UnityAction OnGameOver;
 
     // ── State ─────────────────────────────────────────────────────────────────
 
     public bool IsPaused { get; private set; }
-    public bool IsGameOver { get; private set; }
 
     [Header("Scene Names")]
     public string mainMenuScene = "MainMenu";
@@ -79,7 +77,6 @@ public class GameManager : MonoBehaviour
     void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         UIManager.Instance?.ShowLoadingScreen(false);
-        IsGameOver = false;
 
         bool isGameScene = scene.name != mainMenuScene;
         if (isGameScene) OnGameStart?.Invoke();
@@ -100,15 +97,5 @@ public class GameManager : MonoBehaviour
         Cursor.visible = paused;
 
         OnPauseChanged?.Invoke(paused);
-    }
-
-    // ── Game over ─────────────────────────────────────────────────────────────
-
-    public void TriggerGameOver()
-    {
-        if (IsGameOver) return;
-        IsGameOver = true;
-        SetPause(true);
-        OnGameOver?.Invoke();
     }
 }
