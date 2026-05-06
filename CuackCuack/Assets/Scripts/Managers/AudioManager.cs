@@ -1,228 +1,214 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>
-/// Centralized audio manager. Handles background music with crossfade and
-/// sound effects via an AudioSource pool. Singleton — DontDestroyOnLoad.
-///
-/// Usage:
-///   AudioManager.Instance.PlaySFX("footstep");
-///   AudioManager.Instance.PlayMusic("theme_01");
-///   AudioManager.Instance.SetMasterVolume(0.8f);
-/// </summary>
 public class AudioManager : MonoBehaviour
 {
     public static AudioManager Instance { get; private set; }
 
-    // ── Inspector ─────────────────────────────────────────────────────────────
+    [Header("Persist Between Scenes")]
+    public bool dontDestroyOnLoad = true;
 
-    [Header("Audio Library")]
-    [Tooltip("All sound effect clips. Name them here to call PlaySFX(name).")]
-    public SoundEntry[] sounds;
-
-    [Tooltip("All music tracks. Name them here to call PlayMusic(name).")]
-    public SoundEntry[] musicTracks;
-
-    [Header("SFX Pool")]
-    [Tooltip("Number of AudioSources in the pool. Increase if sounds cut off.")]
-    public int poolSize = 8;
-
-    [Header("Music")]
-    public float crossfadeDuration = 1.5f;
-
-    [Header("Default Volumes")]
-    [Range(0f, 1f)] public float masterVolume = 1f;
+    [Header("Volume")]
     [Range(0f, 1f)] public float sfxVolume = 1f;
     [Range(0f, 1f)] public float musicVolume = 0.5f;
 
-    // ── Internal ──────────────────────────────────────────────────────────────
+    [Header("SFX Prefab")]
+    [Tooltip("Prefab con AudioSource configurado. Si es null se crea uno básico.")]
+    public AudioSource soundFXObject;
 
-    private readonly Dictionary<string, SoundEntry> _sfxMap = new();
-    private readonly Dictionary<string, SoundEntry> _musicMap = new();
+    [Header("Sound Effects")]
+    public SoundEffect[] soundEffects;
 
-    private List<AudioSource> _sfxPool;
-    private AudioSource _musicSourceA;
-    private AudioSource _musicSourceB;
-    private bool _musicOnA = true;
-    private Coroutine _crossfadeCoroutine;
+    [Header("Background Music")]
+    [Tooltip("Lista de pistas de música. El índice 0 se reproduce al arrancar.")]
+    public AudioClip[] backgroundMusics;
 
-    // ── Singleton ─────────────────────────────────────────────────────────────
+    [Tooltip("Si está activado, al llamar NextMusic() vuelve al índice 0 al llegar al final.")]
+    public bool loopPlaylist = true;
+
+    [System.Serializable]
+    public class SoundEffect
+    {
+        public string name;
+        public AudioClip clip;
+        [Range(0f, 1f)] public float volume = 1f;
+        [Range(0.5f, 2f)] public float pitch = 1f;
+    }
+
+    private AudioSource musicSource;
+    private Dictionary<string, SoundEffect> sfxDict = new Dictionary<string, SoundEffect>();
+
+    // Índice de la pista actual en backgroundMusics
+    private int currentMusicIndex = -1;
 
     void Awake()
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
-        DontDestroyOnLoad(gameObject);
+        if (dontDestroyOnLoad) DontDestroyOnLoad(gameObject);
 
-        BuildMaps();
-        BuildPool();
-        BuildMusicSources();
+        musicSource = gameObject.AddComponent<AudioSource>();
+        musicSource.loop = true;
+        musicSource.playOnAwake = false;
+        musicSource.volume = musicVolume;
+        musicSource.spatialBlend = 0f;
+
+        foreach (var sfx in soundEffects)
+            if (!string.IsNullOrEmpty(sfx.name))
+                sfxDict[sfx.name] = sfx;
+
+        if (backgroundMusics != null && backgroundMusics.Length > 0)
+            PlayMusicByIndex(0);
     }
 
-    void OnEnable() => GameManager.OnPauseChanged += OnPauseChanged;
-    void OnDisable() => GameManager.OnPauseChanged -= OnPauseChanged;
+    // ──────────────────────────────────────────
+    //  PLAYLIST METHODS
+    // ──────────────────────────────────────────
 
-    // ── Initialisation ────────────────────────────────────────────────────────
-
-    void BuildMaps()
+    /// <summary>Reproduce la pista en la posición indicada del array.</summary>
+    public void PlayMusicByIndex(int index)
     {
-        foreach (var s in sounds) _sfxMap[s.name] = s;
-        foreach (var m in musicTracks) _musicMap[m.name] = m;
+        if (backgroundMusics == null || backgroundMusics.Length == 0) return;
+        index = Mathf.Clamp(index, 0, backgroundMusics.Length - 1);
+        currentMusicIndex = index;
+        PlayMusic(backgroundMusics[currentMusicIndex]);
     }
 
-    void BuildPool()
+    public void NextMusic()
     {
-        _sfxPool = new List<AudioSource>(poolSize);
-        for (int i = 0; i < poolSize; i++)
+        if (backgroundMusics == null || backgroundMusics.Length == 0) return;
+
+        int next = currentMusicIndex + 1;
+        if (next >= backgroundMusics.Length)
         {
-            var go = new GameObject($"SFX_Pool_{i}");
-            go.transform.parent = transform;
-            var src = go.AddComponent<AudioSource>();
-            src.playOnAwake = false;
-            _sfxPool.Add(src);
-        }
-    }
-
-    void BuildMusicSources()
-    {
-        _musicSourceA = CreateMusicSource("Music_A");
-        _musicSourceB = CreateMusicSource("Music_B");
-    }
-
-    AudioSource CreateMusicSource(string goName)
-    {
-        var go = new GameObject(goName);
-        go.transform.parent = transform;
-        var src = go.AddComponent<AudioSource>();
-        src.playOnAwake = false;
-        src.loop = true;
-        src.volume = 0f;
-        return src;
-    }
-
-    // ── SFX API ───────────────────────────────────────────────────────────────
-
-    /// <summary>Plays a sound effect by name (defined in the Inspector).</summary>
-    public void PlaySFX(string soundName)
-    {
-        Debug.Log($"[AudioManager] PlaySFX('{soundName}')");
-        if (!_sfxMap.TryGetValue(soundName, out var entry))
-        {
-            Debug.LogWarning($"[AudioManager] SFX '{soundName}' not found.");
-            return;
-        }
-        var src = GetFreeSource();
-        src.clip = entry.clip;
-        src.volume = entry.volume * sfxVolume * masterVolume;
-        src.pitch = entry.randomPitch
-            ? Random.Range(entry.pitchMin, entry.pitchMax)
-            : 1f;
-        src.Play();
-    }
-
-    /// <summary>Plays a sound effect at a world position (3D).</summary>
-    public void PlaySFXAt(string soundName, Vector3 position)
-    {
-        if (!_sfxMap.TryGetValue(soundName, out var entry)) return;
-        AudioSource.PlayClipAtPoint(entry.clip, position, entry.volume * sfxVolume * masterVolume);
-    }
-
-    AudioSource GetFreeSource()
-    {
-        foreach (var src in _sfxPool)
-            if (!src.isPlaying) return src;
-
-        // All busy — reuse the first (oldest) one
-        return _sfxPool[0];
-    }
-
-    // ── Music API ─────────────────────────────────────────────────────────────
-
-    /// <summary>Crossfades to a new music track.</summary>
-    public void PlayMusic(string trackName)
-    {
-        if (!_musicMap.TryGetValue(trackName, out var entry))
-        {
-            Debug.LogWarning($"[AudioManager] Music '{trackName}' not found.");
+            Debug.Log("[AudioManager] Ya estás en la última pista.");
             return;
         }
 
-        if (_crossfadeCoroutine != null) StopCoroutine(_crossfadeCoroutine);
-        _crossfadeCoroutine = StartCoroutine(Crossfade(entry));
+        PlayMusicByIndex(next);
     }
 
-    public void StopMusic()
+    public void PreviousMusic()
     {
-        if (_crossfadeCoroutine != null) StopCoroutine(_crossfadeCoroutine);
-        _musicSourceA.Stop();
-        _musicSourceB.Stop();
-    }
+        if (backgroundMusics == null || backgroundMusics.Length == 0) return;
 
-    System.Collections.IEnumerator Crossfade(SoundEntry entry)
-    {
-        AudioSource incoming = _musicOnA ? _musicSourceB : _musicSourceA;
-        AudioSource outgoing = _musicOnA ? _musicSourceA : _musicSourceB;
-
-        float targetVol = entry.volume * musicVolume * masterVolume;
-        incoming.clip = entry.clip;
-        incoming.Play();
-
-        float t = 0f;
-        while (t < crossfadeDuration)
+        int prev = currentMusicIndex - 1;
+        if (prev < 0)
         {
-            t += Time.unscaledDeltaTime;
-            float ratio = t / crossfadeDuration;
-            incoming.volume = Mathf.Lerp(0f, targetVol, ratio);
-            outgoing.volume = Mathf.Lerp(outgoing.volume, 0f, ratio);
-            yield return null;
+            Debug.Log("[AudioManager] Ya estás en la primera pista.");
+            return;
         }
 
-        outgoing.Stop();
-        outgoing.volume = 0f;
-        _musicOnA = !_musicOnA;
+        PlayMusicByIndex(prev);
     }
 
-    // ── Volume control ────────────────────────────────────────────────────────
-
-    public void SetMasterVolume(float v)
+    /// <summary>Alterna directamente entre dos índices (útil para combat/exploration music, etc.).</summary>
+    public void ToggleMusic(int indexA, int indexB)
     {
-        masterVolume = Mathf.Clamp01(v);
-        RefreshMusicVolume();
+        if (currentMusicIndex == indexA)
+            PlayMusicByIndex(indexB);
+        else
+            PlayMusicByIndex(indexA);
     }
 
-    public void SetSFXVolume(float v) => sfxVolume = Mathf.Clamp01(v);
+    /// <summary>Devuelve el índice de la pista que está sonando actualmente.</summary>
+    public int CurrentMusicIndex => currentMusicIndex;
 
-    public void SetMusicVolume(float v)
+    // ──────────────────────────────────────────
+    //  SFX
+    // ──────────────────────────────────────────
+
+    public void PlaySFX(string sfxName, Transform spawnTransform)
     {
-        musicVolume = Mathf.Clamp01(v);
-        RefreshMusicVolume();
+        if (!sfxDict.TryGetValue(sfxName, out SoundEffect sfx))
+        {
+            Debug.LogWarning($"[AudioManager] SFX not found: '{sfxName}'");
+            return;
+        }
+
+        if (sfx.clip == null)
+        {
+            Debug.LogWarning($"[AudioManager] Clip is null on SFX: '{sfxName}'");
+            return;
+        }
+
+        Debug.Log($"[AudioManager] Playing SFX: '{sfxName}' at position {spawnTransform.position}");
+        AudioSource audioSource = soundFXObject != null
+            ? Instantiate(soundFXObject, spawnTransform.position, Quaternion.identity)
+            : new GameObject($"SFX_{sfx.clip.name}").AddComponent<AudioSource>();
+
+        audioSource.transform.position = spawnTransform.position;
+        audioSource.transform.SetParent(null);
+        audioSource.clip = sfx.clip;
+        audioSource.volume = sfx.volume * sfxVolume;
+        audioSource.pitch = sfx.pitch;
+        audioSource.spatialBlend = 1f;
+        audioSource.playOnAwake = false;
+        audioSource.Play();
+        Debug.Log($"[AudioManager] AudioSource state: clip={audioSource.clip.name}, time={audioSource.time}, isPlaying={audioSource.isPlaying}");
+        //Debug.Log($"[AudioManager] AudioSource state: clip={audioSource.clip.name}, time={audioSource.time}, isPlaying={audioSource.isPlaying}");
+
+        Destroy(audioSource.gameObject, audioSource.clip.length);
     }
 
-    void RefreshMusicVolume()
+    public void PlayMiaw(Transform t) => PlaySFX("Miaw", t);
+    public void PlayMetalPipe(Transform t) => PlaySFX("MetalPipe", t);
+    public void PlayAccelerator(Transform t) => PlaySFX("Accelerator", t);
+    public void PlayBoost(Transform t) => PlaySFX("BoostVelocity", t);
+    public void PlayCheckpoint(Transform t) => PlaySFX("Checkpoint", t);
+    public void PlayEnemyShot(Transform t) => PlaySFX("EnemyShot", t);
+    public void PlayShield(Transform t) => PlaySFX("Shield", t);
+    public void PlayEnemyDeath(Transform t) => PlaySFX("EnemyDeath", t);
+    public void PlayLoseRings(Transform t) => PlaySFX("LoseRings", t);
+    public void PlaySpikes(Transform t) => PlaySFX("Spikes", t);
+    public void PlayPickEmerald(Transform t) => PlaySFX("PickEmerald", t);
+    public void PlayPickRings(Transform t) => PlaySFX("PickRings", t);
+    public void PlayRunning(Transform t) => PlaySFX("Running", t);
+    public void PlayJump(Transform t) => PlaySFX("Jump", t);
+    public void PlayPowerUp(Transform t) => PlaySFX("PowerUp", t);
+    public void PlayTrampolines(Transform t) => PlaySFX("Trampolines", t);
+    public void PlayWalking(Transform t) => PlaySFX("Walking", t);
+    public void PlayEggmanLaugh(Transform t) => PlaySFX("EggmanLaugh", t);
+
+    // ──────────────────────────────────────────
+    //  MUSIC CORE
+    // ──────────────────────────────────────────
+
+    public void PlayMusic(AudioClip clip)
     {
-        AudioSource active = _musicOnA ? _musicSourceA : _musicSourceB;
-        if (active.isPlaying) active.volume = musicVolume * masterVolume;
+        musicSource.clip = clip;
+        musicSource.volume = musicVolume;
+        musicSource.Play();
     }
 
-    // ── Pause integration ─────────────────────────────────────────────────────
+    public void StopMusic() => musicSource.Stop();
+    public void PauseMusic() => musicSource.Pause();
+    public void ResumeMusic() => musicSource.UnPause();
 
-    void OnPauseChanged(bool paused)
+    public void SetMusicVolume(float value)
     {
-        AudioSource active = _musicOnA ? _musicSourceA : _musicSourceB;
-        if (paused) active.Pause();
-        else active.UnPause();
+        musicVolume = Mathf.Clamp01(value);
+        musicSource.volume = musicVolume;
     }
-}
 
-// ── Data types ────────────────────────────────────────────────────────────────
+    public void SetSFXVolume(float value) => sfxVolume = Mathf.Clamp01(value);
 
-[System.Serializable]
-public class SoundEntry
-{
-    public string name;
-    public AudioClip clip;
-    [Range(0f, 1f)] public float volume = 1f;
-    public bool randomPitch;
-    [Range(0.5f, 2f)] public float pitchMin = 0.9f;
-    [Range(0.5f, 2f)] public float pitchMax = 1.1f;
+    public void PlayWinSequence(Transform t, string sfxName = "PowerUp")
+    {
+        StartCoroutine(WinSequenceRoutine(t, sfxName));
+    }
+
+    private IEnumerator WinSequenceRoutine(Transform t, string sfxName)
+    {
+        StopMusic();
+
+        if (sfxDict.TryGetValue(sfxName, out SoundEffect sfx) && sfx.clip != null)
+        {
+            PlaySFX(sfxName, t);
+            yield return new WaitForSeconds(sfx.clip.length);
+        }
+
+        PlayMusicByIndex(2);
+    }
 }

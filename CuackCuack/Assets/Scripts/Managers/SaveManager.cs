@@ -65,7 +65,7 @@ public class SaveManager : MonoBehaviour
     {
         if (AudioManager.Instance != null)
         {
-            AudioManager.Instance.SetMasterVolume(GetSetting("masterVolume", 1f));
+            //AudioManager.Instance.SetMasterVolume(GetSetting("masterVolume", 1f));
             AudioManager.Instance.SetSFXVolume(GetSetting("sfxVolume", 1f));
             AudioManager.Instance.SetMusicVolume(GetSetting("musicVolume", 0.5f));
         }

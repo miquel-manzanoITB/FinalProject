@@ -1377,16 +1377,16 @@ MonoBehaviour:
   onInteract:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1305908397}
+      - m_Target: {fileID: 1305908399}
         m_TargetAssemblyTypeName: AudioManager, Assembly-CSharp
-        m_MethodName: PlaySFX
-        m_Mode: 5
+        m_MethodName: PlayMiaw
+        m_Mode: 2
         m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_ObjectArgument: {fileID: 658137726}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Transform, UnityEngine
           m_IntArgument: 0
           m_FloatArgument: 0
-          m_StringArgument: wa
+          m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
   onPickUp:
@@ -1908,7 +1908,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1305908398}
-  - component: {fileID: 1305908397}
+  - component: {fileID: 1305908399}
   m_Layer: 0
   m_Name: AudioManager
   m_TagString: Untagged
@@ -1916,31 +1916,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1305908397
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1305908396}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 244b075fd1899434c81621d9edd51624, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AudioManager
-  sounds:
-  - name: wa
-    clip: {fileID: 8300000, guid: d62d91b91d28c9b48875b039c2febbd6, type: 3}
-    volume: 1
-    randomPitch: 0
-    pitchMin: 0
-    pitchMax: 0
-  musicTracks: []
-  poolSize: 8
-  crossfadeDuration: 1.5
-  masterVolume: 1
-  sfxVolume: 1
-  musicVolume: 0.5
 --- !u!4 &1305908398
 Transform:
   m_ObjectHideFlags: 0
@@ -1956,6 +1931,33 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1305908399
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1305908396}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 244b075fd1899434c81621d9edd51624, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AudioManager
+  dontDestroyOnLoad: 1
+  sfxVolume: 1
+  musicVolume: 1
+  soundFXObject: {fileID: 5037157384826020768, guid: 783bee7354d1e5e43a544b798633c487, type: 3}
+  soundEffects:
+  - name: MetalPipe
+    clip: {fileID: 8300000, guid: d62d91b91d28c9b48875b039c2febbd6, type: 3}
+    volume: 1
+    pitch: 0
+  - name: Miaw
+    clip: {fileID: 8300000, guid: 6a687eb7505525249ae3c16ecef7010a, type: 3}
+    volume: 1
+    pitch: 0
+  backgroundMusics: []
+  loopPlaylist: 1
 --- !u!1001 &1450920125
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3231,6 +3233,7 @@ GameObject:
   - component: {fileID: 2141685914}
   - component: {fileID: 2141685916}
   - component: {fileID: 2141685915}
+  - component: {fileID: 2141685918}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -3440,6 +3443,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 435c5a7b09536bf4a896029c33838ec9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerInputController
+--- !u!114 &2141685918
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2141685907}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 94b4dce269ffb7349b41ed50c933684a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AudioTest
+  testClip: {fileID: 8300000, guid: 6a687eb7505525249ae3c16ecef7010a, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
