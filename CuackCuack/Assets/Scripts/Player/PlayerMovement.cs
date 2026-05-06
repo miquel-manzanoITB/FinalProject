@@ -56,7 +56,7 @@ public class PlayerMovement : MonoBehaviour
     void Update()
     {
         CheckGround();
-        ApplyDrag();
+        //ApplyDrag();
         _playerCamera.SetMoving(_moveInput != Vector2.zero && _isGrounded);
     }
 

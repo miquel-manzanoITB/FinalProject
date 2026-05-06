@@ -8,7 +8,7 @@ public class Interactable : MonoBehaviour
 
     [Header("Drag Physics")]
     public float dragForce = 50f;
-    public float maxDragDistance = 3f;     // Distancia máxima al arrastrar
+    //public float maxDragDistance = 3f;     // Distancia máxima al arrastrar
 
     [Header("Events")]
     public UnityEvent onInteract;          // Para conectar lógica custom desde el Inspector
